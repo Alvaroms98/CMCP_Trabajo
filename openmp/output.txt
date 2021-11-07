@@ -1,0 +1,4 @@
+Versión 'poisson.c' solo OpenMP
+Tiempo de computo de la función 'jacobi_poisson': 44.907658 segundos
+Tamaño: (N,M) = (400, 400)
+Número de threads usados: 64

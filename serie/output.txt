@@ -1,0 +1,3 @@
+Versión 'poisson.c' secuencial
+Tiempo de computo de la función 'jacobi_poisson': 830.344761 segundos
+Tamaño: (N,M) = (400, 400)
