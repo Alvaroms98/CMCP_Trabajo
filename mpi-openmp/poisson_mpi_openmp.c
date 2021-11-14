@@ -15,7 +15,7 @@
  *   Se asume que x,b,t son de dimensión (N+2)*(M+2), se recorren solo los puntos interiores
  *   de la malla, y en los bordes están almacenadas las condiciones de frontera (por defecto 0).
  */
-void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart, int threads)
+void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart)
 {
   int ld = M+2;
   int rank;
@@ -63,7 +63,7 @@ void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart,
   }
 
   int i, j;
-  #pragma omp parallel for private(j) num_threads(threads) collapse(2)
+  #pragma omp parallel for private(j) collapse(2)
   for (i=1; i<=N; i++) {
     for (j=1; j<=M; j++) {
       t[i*ld+j] = (b[i*ld+j] + x[(i+1)*ld+j] + x[(i-1)*ld+j] + x[i*ld+(j+1)] + x[i*ld+(j-1)])/4.0;
@@ -87,9 +87,9 @@ void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart,
  *   Suponemos que las condiciones de contorno son igual a 0 en toda la
  *   frontera del dominio.
  */
-void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart, int threads)
+void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart)
 {
-  int i, j, k, ld=M+2, conv, maxit=1000000;
+  int i, j, k, ld=M+2, conv, maxit=1000;
   double *t, local_s, total_s, tol=1e-6;
 
   t = (double*)calloc((N+2)*(M+2),sizeof(double));
@@ -103,12 +103,12 @@ void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart, int t
   while (!conv && k<maxit) {
 
     /* calcula siguiente vector */
-    jacobi_step(N,M,x,b,t, comm_cart, threads);
+    jacobi_step(N,M,x,b,t, comm_cart);
 
     /* criterio de parada: ||x_{k}-x_{k+1}||<tol */
     local_s = 0.0;
 
-    #pragma omp parallel num_threads(threads)
+    #pragma omp parallel
     {
       #pragma omp for reduction(+:local_s) private(j) collapse(2)
       for (i=1; i<=N; i++) {
@@ -161,9 +161,18 @@ int main(int argc, char **argv)
   int size;
   MPI_Comm_size(MPI_COMM_WORLD , &size);
 
+  int check_int = sqrt(size);
+  float check_float = sqrt(size);
+
   int m,n;
-  m = M/(size/2);
-  n = N/(size/2);
+  if (!(check_float - check_int)){
+    m = M/check_int;
+    n = N/check_int;
+  }
+  else{
+    printf("La raíz del número de procesos ha de ser entera\n");
+    exit(EXIT_FAILURE);
+  }
 
   // Creación del comunicador cartesiano
   int dims[2] = {0,0};
@@ -182,9 +191,9 @@ int main(int argc, char **argv)
   b = (double*)calloc((n+2)*(m+2),sizeof(double));
 
   /* Inicializar datos */
-  int max_threads = omp_get_max_threads();
+  //int max_threads = omp_get_max_threads();
 
-  #pragma omp parallel for private(j) num_threads(max_threads) collapse(2)
+  #pragma omp parallel for private(j) collapse(2)
   for (i=1; i<=n; i++) {
     for (j=1; j<=m; j++) {
       b[i*ld+j] = h*h*f;  /* suponemos que la función f es constante en todo el dominio */
@@ -196,7 +205,7 @@ int main(int argc, char **argv)
   MPI_Barrier(comm_cart);
   double tic = MPI_Wtime();
 
-  jacobi_poisson(n,m,x,b,&comm_cart,max_threads);
+  jacobi_poisson(n,m,x,b,&comm_cart);
 
   MPI_Barrier(comm_cart);
   double toc = MPI_Wtime();
@@ -245,6 +254,12 @@ int main(int argc, char **argv)
     MPI_Send(&x[1*ld+1],1,bloque,0,0,comm_cart);
   }
 
+  int num_threads;
+
+  #pragma omp parallel
+  {
+    num_threads = omp_get_num_threads();
+  }
 
 
   ld = M;
@@ -256,7 +271,8 @@ int main(int argc, char **argv)
     fprintf(output, "Versión 'poisson.c' solo MPI\n");
     fprintf(output,"Tiempo de computo de la función 'jacobi_poisson': %f segundos\n", toc-tic);
     fprintf(output, "Tamaño: (N,M) = (%d, %d)\n", N, M);
-    fprintf(output, "Número de threads usados: %d\n", max_threads);
+    fprintf(output, "Número de threads usados: %d\n", num_threads);
+    fprintf(output, "Número de procesos: %d\n",size);
     fclose(output);
 
     FILE *p = fopen("matrix_poisson_mpi_openmp.txt","w");

@@ -1,0 +1,3 @@
+Versión 'poisson.c' solo MPI
+Tiempo de computo de la función 'jacobi_poisson': 14.340646 segundos
+Tamaño: (N,M) = (400, 400)

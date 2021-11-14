@@ -15,10 +15,10 @@
  *   Se asume que x,b,t son de dimensión (N+2)*(M+2), se recorren solo los puntos interiores
  *   de la malla, y en los bordes están almacenadas las condiciones de frontera (por defecto 0).
  */
-void jacobi_step(int N,int M,double *x,double *b,double *t, int max_threads)
+void jacobi_step(int N,int M,double *x,double *b,double *t)
 {
   int i, j, ld=M+2;
-  #pragma omp parallel for private(j) num_threads(max_threads) collapse(2)
+  #pragma omp parallel for private(j) collapse(2)
   for (i=1; i<=N; i++) {
     for (j=1; j<=M; j++) {
       t[i*ld+j] = (b[i*ld+j] + x[(i+1)*ld+j] + x[(i-1)*ld+j] + x[i*ld+(j+1)] + x[i*ld+(j-1)])/4.0;
@@ -42,9 +42,9 @@ void jacobi_step(int N,int M,double *x,double *b,double *t, int max_threads)
  *   Suponemos que las condiciones de contorno son igual a 0 en toda la
  *   frontera del dominio.
  */
-void jacobi_poisson(int N,int M,double *x,double *b, int max_threads)
+void jacobi_poisson(int N,int M,double *x,double *b)
 {
-  int i, j, k, ld=M+2, conv, maxit=1000000;
+  int i, j, k, ld=M+2, conv, maxit=1000;
   double *t, s, tol=1e-6;
 
   t = (double*)calloc((N+2)*(M+2),sizeof(double));
@@ -55,12 +55,12 @@ void jacobi_poisson(int N,int M,double *x,double *b, int max_threads)
   while (!conv && k<maxit) {
 
     /* calcula siguiente vector */
-    jacobi_step(N,M,x,b,t,max_threads);
+    jacobi_step(N,M,x,b,t);
 
     /* criterio de parada: ||x_{k}-x_{k+1}||<tol */
     s = 0.0;
 
-    #pragma omp parallel num_threads(max_threads)
+    #pragma omp parallel
     {
       #pragma omp for reduction(+:s) private(j) collapse(2)
       for (i=1; i<=N; i++) {
@@ -109,9 +109,8 @@ int main(int argc, char **argv)
   b = (double*)calloc((N+2)*(M+2),sizeof(double));
 
   /* Inicializar datos */
-  int max_threads = omp_get_max_threads();
 
-  #pragma omp parallel for private(j) num_threads(max_threads) collapse(2)
+  #pragma omp parallel for private(j) collapse(2)
   for (i=1; i<=N; i++) {
     for (j=1; j<=M; j++) {
       b[i*ld+j] = h*h*f;  /* suponemos que la función f es constante en todo el dominio */
@@ -125,14 +124,22 @@ int main(int argc, char **argv)
 
   
   tic = omp_get_wtime();
-  jacobi_poisson(N,M,x,b,max_threads);
+  jacobi_poisson(N,M,x,b);
   toc = omp_get_wtime();
+
+  int num_threads;
+
+  #pragma omp parallel
+  {
+    num_threads = omp_get_num_threads();
+  }
+
 
   FILE *output = fopen("output.txt","w");
   fprintf(output, "Versión 'poisson.c' solo OpenMP\n");
   fprintf(output, "Tiempo de computo de la función 'jacobi_poisson': %f segundos\n", toc-tic);
   fprintf(output, "Tamaño: (N,M) = (%d, %d)\n", N, M);
-  fprintf(output, "Número de threads usados: %d\n", max_threads);
+  fprintf(output, "Número de threads usados: %d\n", num_threads);
   fclose(output);
 
 

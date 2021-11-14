@@ -4,4 +4,4 @@
 #SBATCH --time=20:00
 #SBATCH --partition=mcpd
 
-mpiexec ./poisson_mpi_openmp.exe 400 400
+OMP_NUM_THREADS=64 mpiexec ./poisson_mpi_openmp.exe 400 400

@@ -87,7 +87,7 @@ void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart)
  */
 void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart)
 {
-  int i, j, k, ld=M+2, conv, maxit=1000000;
+  int i, j, k, ld=M+2, conv, maxit=100000;
   double *t, local_s, total_s, tol=1e-6;
 
   t = (double*)calloc((N+2)*(M+2),sizeof(double));
@@ -150,9 +150,19 @@ int main(int argc, char **argv)
   int size;
   MPI_Comm_size(MPI_COMM_WORLD , &size);
 
+  int check_int = sqrt(size);
+  float check_float = sqrt(size);
+
   int m,n;
-  m = M/(size/2);
-  n = N/(size/2);
+  if (!(check_float - check_int)){
+    m = M/check_int;
+    n = N/check_int;
+  }
+  else{
+    printf("La raíz del número de procesos ha de ser entera\n");
+    exit(EXIT_FAILURE);
+  }
+ 
 
   // Creación del comunicador cartesiano
   int dims[2] = {0,0};
@@ -242,6 +252,7 @@ int main(int argc, char **argv)
     fprintf(output, "Versión 'poisson.c' solo MPI\n");
     fprintf(output,"Tiempo de computo de la función 'jacobi_poisson': %f segundos\n", toc-tic);
     fprintf(output, "Tamaño: (N,M) = (%d, %d)\n", N, M);
+    fprintf(output, "Número de procesos: %d\n",size);
     
     fclose(output);
 
