@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "mpi.h"
+#include <mpi/mpi.h>
 
 /*
  * Un paso del método de Jacobi para la ecuación de Poisson
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
   }
   else{
     printf("La raíz del número de procesos ha de ser entera\n");
-    exit(EXIT_FAILURE);
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
   }
  
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "mpi.h"
+#include <mpi/mpi.h>
 #include <omp.h>
 
 /*
@@ -89,7 +89,7 @@ void jacobi_step(int N,int M,double *x,double *b,double *t, MPI_Comm *comm_cart)
  */
 void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart)
 {
-  int i, j, k, ld=M+2, conv, maxit=1000;
+  int i, j, k, ld=M+2, conv, maxit=70000;
   double *t, local_s, total_s, tol=1e-6;
 
   t = (double*)calloc((N+2)*(M+2),sizeof(double));
@@ -156,7 +156,8 @@ int main(int argc, char **argv)
   }
 
   /* Se inician directivas MPI */
-  MPI_Init( &argc , &argv);
+  int provided;
+  MPI_Init_thread( &argc , &argv, MPI_THREAD_FUNNELED, &provided);
   
   int size;
   MPI_Comm_size(MPI_COMM_WORLD , &size);
@@ -171,7 +172,7 @@ int main(int argc, char **argv)
   }
   else{
     printf("La raíz del número de procesos ha de ser entera\n");
-    exit(EXIT_FAILURE);
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
   }
 
   // Creación del comunicador cartesiano
@@ -273,6 +274,7 @@ int main(int argc, char **argv)
     fprintf(output, "Tamaño: (N,M) = (%d, %d)\n", N, M);
     fprintf(output, "Número de threads usados: %d\n", num_threads);
     fprintf(output, "Número de procesos: %d\n",size);
+    fprintf(output, "Suporte de threads devuelto por MPI: %d\n", provided);
     fclose(output);
 
     FILE *p = fopen("matrix_poisson_mpi_openmp.txt","w");

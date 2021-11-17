@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --nodes=4
-#SBATCH --ntasks=4
-#SBATCH --time=20:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=40:00
 #SBATCH --partition=mcpd
 
-OMP_NUM_THREADS=64 mpiexec ./poisson_mpi_openmp.exe 400 400
+OMP_NUM_THREADS=1 mpiexec ./poisson_mpi_openmp.exe 200 200
