@@ -4,4 +4,4 @@
 #SBATCH --time=20:00
 #SBATCH --partition=mcpd
 
-./poisson_openmp.exe 400 400
+OMP_NUM_THREADS=1 ./poisson_openmp.exe 200 200

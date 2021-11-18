@@ -1,5 +1,6 @@
 Versión 'poisson.c' solo MPI
-Tiempo de computo de la función 'jacobi_poisson': 169.904264 segundos
-Tamaño: (N,M) = (800, 800)
-Número de threads usados: 4
-Número de procesos: 4
+Tiempo de computo de la función 'jacobi_poisson': 991.597860 segundos
+Tamaño: (N,M) = (3200, 3200)
+Número de threads usados: 16
+Número de procesos: 16
+Suporte de threads devuelto por MPI: 2

@@ -44,7 +44,7 @@ void jacobi_step(int N,int M,double *x,double *b,double *t)
  */
 void jacobi_poisson(int N,int M,double *x,double *b)
 {
-  int i, j, k, ld=M+2, conv, maxit=1000;
+  int i, j, k, ld=M+2, conv, maxit=70000;
   double *t, s, tol=1e-6;
 
   t = (double*)calloc((N+2)*(M+2),sizeof(double));

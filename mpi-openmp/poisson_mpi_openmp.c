@@ -117,7 +117,7 @@ void jacobi_poisson(int N,int M,double *x,double *b, MPI_Comm * comm_cart)
         }
       }
 
-      #pragma omp single nowait
+      #pragma omp master
       {
         MPI_Allreduce( &local_s , &total_s , 1 , MPI_DOUBLE , MPI_SUM , *comm_cart);
         conv = (sqrt(total_s)<tol);
